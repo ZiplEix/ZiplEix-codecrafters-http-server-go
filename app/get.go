@@ -42,7 +42,7 @@ func get(conn *net.Conn, req Request, path []string) {
 
 		file, err := os.ReadFile(filePath)
 		if err != nil {
-			resp := newResponse(500, "Internal server error", map[string]string{"Content-Type": "text/plain"}, "Details: "+err.Error())
+			resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "Details: "+err.Error())
 			send(*conn, resp)
 			return
 		}
