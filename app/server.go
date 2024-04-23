@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
-
-	"github.com/sanity-io/litter"
 )
 
 type Request struct {
@@ -15,6 +14,18 @@ type Request struct {
 	Protocol string
 	Header   map[string]string
 	Body     string
+}
+
+type Response struct {
+	Protocol   string
+	ReturnCode int
+	Status     string
+	Header     map[string]string
+	Body       string
+}
+
+func newResponse(returnCode int, status string, header map[string]string, body string) Response {
+	return Response{"HTTP/1.1", returnCode, status, header, body}
 }
 
 func parseRequest(data string) Request {
@@ -50,12 +61,14 @@ func recv(conn net.Conn) Request {
 	req := string(data)
 	request := parseRequest(req)
 
-	litter.Dump(request)
+	// litter.Dump(request)
 
 	return request
 }
 
-func send(conn net.Conn, data string) {
+func send(conn net.Conn, resp Response) {
+	data := fmt.Sprintf("%s %d %s\r\n\r\n%s", resp.Protocol, resp.ReturnCode, resp.Status, resp.Body)
+
 	_, err := conn.Write([]byte(data))
 	if err != nil {
 		fmt.Println("Error writing data: ", err.Error())
@@ -85,9 +98,29 @@ func main() {
 	req := recv(conn)
 
 	// send the response
-	if req.Path == "/" {
-		send(conn, "HTTP/1.1 200 OK\r\n\r\n")
+
+	// get the mast part of the path
+	path := strings.Split(req.Path, "/")
+
+	fmt.Printf("path: %v\n", path)
+	fmt.Printf("path length: %d\n", len(path))
+
+	if len(path) < 3 {
+		resp := newResponse(404, "Not Found, path to short", map[string]string{"Content-Type": "text/plain"}, "Not Found")
+		send(conn, resp)
+		return
+	} else if path[1] != "echo" {
+		resp := newResponse(404, "Not Found, no echo", map[string]string{"Content-Type": "text/plain"}, "Not Found")
+		send(conn, resp)
+		return
 	} else {
-		send(conn, "HTTP/1.1 404 Not Found\r\n\r\n")
+		respText := path[2]
+
+		header := make(map[string]string)
+		header["Content-Type"] = "text/plain"
+		header["Content-Length"] = strconv.Itoa(len(respText))
+
+		resp := newResponse(200, "OK", header, respText)
+		send(conn, resp)
 	}
 }
