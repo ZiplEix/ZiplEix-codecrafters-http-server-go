@@ -9,3 +9,5 @@
 module github.com/codecrafters-io/http-server-starter-go
 
 go 1.22
+
+require github.com/sanity-io/litter v1.5.5 // indirect
