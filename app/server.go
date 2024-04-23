@@ -66,8 +66,17 @@ func recv(conn net.Conn) Request {
 	return request
 }
 
+func formatHeader(header map[string]string) string {
+	headerText := ""
+	for key, value := range header {
+		headerText += fmt.Sprintf("%s: %s\r\n", key, value)
+	}
+
+	return headerText
+}
+
 func send(conn net.Conn, resp Response) {
-	data := fmt.Sprintf("%s %d %s\r\n\r\n%s", resp.Protocol, resp.ReturnCode, resp.Status, resp.Body)
+	data := fmt.Sprintf("%s %d %s\r\n%s\r\n%s", resp.Protocol, resp.ReturnCode, resp.Status, formatHeader(resp.Header), resp.Body)
 
 	_, err := conn.Write([]byte(data))
 	if err != nil {
