@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -55,58 +54,14 @@ func processRequest(conn *net.Conn) {
 
 	path := strings.Split(req.Path, "/")
 
-	if req.Path == "/" {
-		resp := newResponse(200, "OK", map[string]string{"Content-Type": "text/plain"}, "")
-		send(*conn, resp)
-		return
-	}
-
-	if strings.HasPrefix(req.Path, "/echo") {
-		respText := strings.Join(path[2:], "/")
-
-		header := make(map[string]string)
-		header["Content-Type"] = "text/plain"
-		header["Content-Length"] = strconv.Itoa(len(respText))
-
-		resp := newResponse(200, "OK", header, respText)
+	if req.Method == "GET" {
+		get(conn, req, path)
+	} else if req.Method == "POST" {
+		post(conn, req, path)
+	} else {
+		resp := newResponse(405, "Method Not Allowed", map[string]string{"Content-Type": "text/plain"}, "")
 		send(*conn, resp)
 	}
-
-	if strings.HasPrefix(req.Path, "/user-agent") {
-		header := make(map[string]string)
-		header["Content-Type"] = "text/plain"
-		header["Content-Length"] = strconv.Itoa(len(req.Header["User-Agent"]))
-
-		resp := newResponse(200, "OK", header, req.Header["User-Agent"])
-		send(*conn, resp)
-	}
-
-	if strings.HasPrefix(req.Path, "/files") {
-		fmt.Println("dans files")
-
-		filePath := strings.Join(path[2:], "/")
-
-		filePath = fmt.Sprintf("%s/%s", *rootDir, filePath)
-
-		file, err := os.ReadFile(filePath)
-		if err != nil {
-			resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "Details: "+err.Error())
-			send(*conn, resp)
-			return
-		}
-
-		header := make(map[string]string)
-		header["Content-Type"] = "application/octet-stream"
-		header["Content-Length"] = strconv.Itoa(len(file))
-
-		resp := newResponse(200, "OK", header, string(file))
-		send(*conn, resp)
-		return
-	}
-
-	// if the path is not found
-	resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "")
-	send(*conn, resp)
 }
 
 func handleConnection(l net.Listener) {
