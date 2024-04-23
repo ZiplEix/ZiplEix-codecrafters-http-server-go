@@ -102,8 +102,11 @@ func main() {
 	// get the mast part of the path
 	path := strings.Split(req.Path, "/")
 
-	fmt.Printf("path: %v\n", path)
-	fmt.Printf("path length: %d\n", len(path))
+	if req.Path == "/" {
+		resp := newResponse(200, "OK", map[string]string{"Content-Type": "text/plain"}, "")
+		send(conn, resp)
+		return
+	}
 
 	if len(path) < 3 {
 		resp := newResponse(404, "Not Found, path to short", map[string]string{"Content-Type": "text/plain"}, "Not Found")
