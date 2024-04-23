@@ -1,11 +1,16 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"strings"
+)
+
+var (
+	rootDir *string
 )
 
 func recv(conn net.Conn) (Request, error) {
@@ -26,8 +31,6 @@ func formatHeader(header map[string]string) string {
 	for key, value := range header {
 		headerText += fmt.Sprintf("%s: %s\r\n", key, value)
 	}
-
-	fmt.Printf("Header text: %s\n", headerText)
 
 	return headerText
 }
@@ -78,6 +81,29 @@ func processRequest(conn *net.Conn) {
 		send(*conn, resp)
 	}
 
+	if strings.HasPrefix(req.Path, "/files") {
+		fmt.Println("dans files")
+
+		filePath := strings.Join(path[2:], "/")
+
+		filePath = fmt.Sprintf("%s/%s", *rootDir, filePath)
+
+		file, err := os.ReadFile(filePath)
+		if err != nil {
+			resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "Details: "+err.Error())
+			send(*conn, resp)
+			return
+		}
+
+		header := make(map[string]string)
+		header["Content-Type"] = "application/octet-stream"
+		header["Content-Length"] = strconv.Itoa(len(file))
+
+		resp := newResponse(200, "OK", header, string(file))
+		send(*conn, resp)
+		return
+	}
+
 	// if the path is not found
 	resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "")
 	send(*conn, resp)
@@ -96,6 +122,15 @@ func handleConnection(l net.Listener) {
 }
 
 func main() {
+
+	rootDir = flag.String("directory", "", "Directory to serve files from")
+
+	if rootDir == nil || *rootDir == "" {
+		*rootDir = "./"
+	}
+
+	flag.Parse()
+
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
