@@ -117,15 +117,7 @@ func main() {
 		return
 	}
 
-	if len(path) < 3 {
-		resp := newResponse(404, "Not Found, path to short", map[string]string{"Content-Type": "text/plain"}, "Not Found")
-		send(conn, resp)
-		return
-	} else if path[1] != "echo" {
-		resp := newResponse(404, "Not Found, no echo", map[string]string{"Content-Type": "text/plain"}, "Not Found")
-		send(conn, resp)
-		return
-	} else {
+	if strings.HasPrefix(req.Path, "/echo") {
 		respText := strings.Join(path[2:], "/")
 
 		header := make(map[string]string)
@@ -133,6 +125,15 @@ func main() {
 		header["Content-Length"] = strconv.Itoa(len(respText))
 
 		resp := newResponse(200, "OK", header, respText)
+		send(conn, resp)
+	}
+
+	if strings.HasPrefix(req.Path, "/user-agent") {
+		header := make(map[string]string)
+		header["Content-Type"] = "text/plain"
+		header["Content-Length"] = strconv.Itoa(len(req.Header["User-Agent"]))
+
+		resp := newResponse(200, "OK", header, req.Header["User-Agent"])
 		send(conn, resp)
 	}
 }
