@@ -126,7 +126,7 @@ func main() {
 		send(conn, resp)
 		return
 	} else {
-		respText := path[2]
+		respText := strings.Join(path[2:], "/")
 
 		header := make(map[string]string)
 		header["Content-Type"] = "text/plain"
