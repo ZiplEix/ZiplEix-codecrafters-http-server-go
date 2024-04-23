@@ -136,4 +136,8 @@ func main() {
 		resp := newResponse(200, "OK", header, req.Header["User-Agent"])
 		send(conn, resp)
 	}
+
+	// if the path is not found
+	resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "")
+	send(conn, resp)
 }
