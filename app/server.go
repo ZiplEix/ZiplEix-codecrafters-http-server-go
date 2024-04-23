@@ -19,6 +19,9 @@ func recv(conn net.Conn) (Request, error) {
 		return Request{}, fmt.Errorf("Error reading data: %s", err.Error())
 	}
 
+	// sanitize the data
+	data = []byte(strings.Trim(string(data), "\x00"))
+
 	req := string(data)
 	request := parseRequest(req)
 
