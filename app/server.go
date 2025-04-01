@@ -37,7 +37,11 @@ func formatHeader(header map[string]string) string {
 	return headerText
 }
 
-func send(conn net.Conn, resp Response) error {
+func send(conn net.Conn, req Request, resp Response) error {
+	if canCompress(req) {
+		compress(req, &resp)
+	}
+
 	data := fmt.Sprintf("%s %d %s\r\n%s\r\n%s", resp.Protocol, resp.ReturnCode, resp.Status, formatHeader(resp.Header), resp.Body)
 
 	_, err := conn.Write([]byte(data))
@@ -63,7 +67,7 @@ func processRequest(conn *net.Conn) {
 		post(conn, req, path)
 	} else {
 		resp := newResponse(405, "Method Not Allowed", map[string]string{"Content-Type": "text/plain"}, "")
-		send(*conn, resp)
+		send(*conn, req, resp)
 	}
 }
 

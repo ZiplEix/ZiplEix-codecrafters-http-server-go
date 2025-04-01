@@ -15,7 +15,7 @@ func post(conn *net.Conn, req Request, path []string) {
 		err := os.WriteFile(filePath, []byte(req.Body), 0644)
 		if err != nil {
 			resp := newResponse(500, "Internal server error", map[string]string{"Content-Type": "text/plain"}, "Details: "+err.Error())
-			send(*conn, resp)
+			send(*conn, req, resp)
 			return
 		}
 
@@ -24,11 +24,11 @@ func post(conn *net.Conn, req Request, path []string) {
 		header["Content-Length"] = "0"
 
 		resp := newResponse(201, "Created", header, "")
-		send(*conn, resp)
+		send(*conn, req, resp)
 		return
 	}
 
 	// if the path is not found
 	resp := newResponse(404, "Not Found", map[string]string{"Content-Type": "text/plain"}, "")
-	send(*conn, resp)
+	send(*conn, req, resp)
 }
