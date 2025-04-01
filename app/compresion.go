@@ -1,6 +1,9 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -21,13 +24,31 @@ func compress(req Request, res *Response) {
 	}
 
 	if strings.Contains(req.Header["Accept-Encoding"], "gzip") {
-		res.Header["Content-Encoding"] = "gzip"
+		newBody, err := gzipCompress(res.Body)
+		if err != nil {
+			fmt.Println("Error compressing response body:", err)
+			return
+		}
 
-		res.Body = string(gzipCompress(res.Body))
-		res.Header["Content-Length"] = strconv.Itoa(len(res.Body))
+		res.Header["Content-Encoding"] = "gzip"
+		res.Body = string(newBody)
+		res.Header["Content-Length"] = strconv.Itoa(len(newBody))
 	}
 }
 
-func gzipCompress(body string) []byte {
-	return []byte(body)
+func gzipCompress(body string) ([]byte, error) {
+	var buff bytes.Buffer
+	gz := gzip.NewWriter(&buff)
+
+	_, err := gz.Write([]byte(body))
+	if err != nil {
+		return nil, err
+	}
+
+	err = gz.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buff.Bytes(), nil
 }
